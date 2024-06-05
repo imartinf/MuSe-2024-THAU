@@ -66,7 +66,9 @@ class Model(nn.Module):
 
         d_rnn_out = params.model_dim * 2 if params.rnn_bi and params.rnn_n_layers > 0 else params.model_dim
         self.out = OutLayer(d_rnn_out, params.d_fc_out, params.n_targets, dropout=params.linear_dropout)
-        self.final_activation = ACTIVATION_FUNCTIONS[params.task]()
+        # For the PCA case the final activation is the identity function
+        # self.final_activation = ACTIVATION_FUNCTIONS[params.task]()
+        self.final_activation = nn.Identity()
 
     def forward(self, x, x_len):
         x = self.inp(x)

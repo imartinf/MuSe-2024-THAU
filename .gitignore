@@ -10,3 +10,4 @@ venv/
 *.envrc
 *#
 test_scripts/
+results
