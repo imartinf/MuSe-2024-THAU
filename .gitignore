@@ -11,3 +11,8 @@ venv/
 *#
 test_scripts/
 results
+wandb/
+SimSun.ttf
+.vscode/
+model/
+cache/

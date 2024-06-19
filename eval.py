@@ -14,6 +14,9 @@ def calc_pearsons(preds, labels):
         preds = np.concatenate(preds)
     if not type(labels) == np.ndarray:
         labels = np.concatenate(labels)
+    # If the task is multilabel, compute r for each label and return the mean
+    if len(preds.shape) > 1:
+        return mean_pearsons(preds, labels)
     r = stats.pearsonr(preds, labels)
     return r[0]
 

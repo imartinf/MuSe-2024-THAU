@@ -28,7 +28,9 @@ def parse_args():
                         help=f'Specify the task from {TASKS}.')
     parser.add_argument('--feature', required=True,
                         help='Specify the features used (only one).')
-    parser.add_argument('--label_dim', default="assertiv", choices=config.PERCEPTION_LABELS)
+    # --label_dim can take up to two choices separated by a comma
+    # parser.add_argument('--label_dim', default="assertiv", choices=config.PERCEPTION_LABELS)
+    parser.add_argument('--label_dim', default="PC1", help='Specify the label dimension used.')
     parser.add_argument('--normalize', action='store_true',
                         help='Specify whether to normalize features (default: False).')
     parser.add_argument('--model_dim', type=int, default=64,
@@ -100,6 +102,9 @@ def main(args):
 
     # emo_dim only relevant for stress/personalisation
     args.label_dim = args.label_dim if args.task==PERCEPTION else ''
+    # Parse label dim if it is a comma separated list
+    args.label_dim = args.label_dim.split(',')
+    args.label_dim = [label.strip() for label in args.label_dim]
     print('Loading data ...')
     args.paths['partition'] = os.path.join(config.PATH_TO_METADATA[args.task], f'partition.csv')
 

@@ -8,7 +8,7 @@ from glob import glob
 from tqdm import tqdm
 from sklearn.preprocessing import StandardScaler
 
-from config import PATH_TO_FEATURES, PATH_TO_LABELS, PARTITION_FILES, HUMOR, PERCEPTION
+from config import PATH_TO_FEATURES, PATH_TO_LABELS, PARTITION_FILES, HUMOR, PERCEPTION, PERCEPTION_PATH
 
 
 ################# GLOBAL UTILITY METHODS #############################################
@@ -155,21 +155,36 @@ def load_perception_subject(feature, subject_id, normalizer, label_dim) -> Tuple
     label_path = PATH_TO_LABELS[PERCEPTION]
     labels_df = pd.read_csv(label_path)
     label_values = labels_df[(labels_df.subj_id==int(subject_id))][label_dim].values
-    assert len(label_values) == 1
-    label = np.array([[label_values[0]]])
+    if len(label_values) == 0:
+        label = np.array([[label_values[0]]])
+    else:
+        # Multi label regression
+        label = np.array(label_values)
 
-    feature_path = os.path.join(PATH_TO_FEATURES[PERCEPTION], feature)
-    feature_df = pd.read_csv(os.path.join(feature_path, f'{subject_id}.csv'))
+    if "hidden_states" in feature:
+        # import torch if not yet imported
+        if "torch" not in globals():
+            import torch
+        
+        feature_path = os.path.join(PERCEPTION_PATH, "hidden_states", feature.split("hidden_states_")[-1])
+        layer_to_extract = -1
+        hidden_states = torch.load(os.path.join(feature_path, f'{subject_id}.pt'))
+        hidden_states = hidden_states[layer_to_extract, :, :].cpu().detach().float().numpy()
+        features = [hidden_states]
 
-    any_nan = feature_df.isna().any().any()
-    if any_nan:
-        feature_df.dropna(inplace=True)
+    else:
+        feature_path = os.path.join(PATH_TO_FEATURES[PERCEPTION], feature) 
+        feature_df = pd.read_csv(os.path.join(feature_path, f'{subject_id}.csv'))
 
-    feature_idx = 2
-    features = feature_df.iloc[:, feature_idx:].values
-    if not (normalizer is None):
-        features = normalizer.transform(features)
-    features = [features]
+        any_nan = feature_df.isna().any().any()
+        if any_nan:
+            feature_df.dropna(inplace=True)
+
+        feature_idx = 2
+        features = feature_df.iloc[:, feature_idx:].values
+        if not (normalizer is None):
+            features = normalizer.transform(features)
+        features = [features]
 
     metas = np.array([subject_id]).reshape((1, 1, 1))
 
@@ -205,7 +220,7 @@ def load_data(task:str,
         meta: corresponding list of ndarrays shaped (seq_length, metadata_dim) where seq_length=1 for n-to-1/n-to-4
     """
 
-    data_file_name = f'data_{task}_{feature}_{label_dim + "_" if len(label_dim) > 0 else ""}_{"norm_" if normalize else ""}' \
+    data_file_name = f'data_{task}_{feature}_{str(label_dim) + "_" if len(label_dim) > 0 else ""}_{"norm_" if normalize else ""}' \
                      f'{f"_{data_file_suffix}" if data_file_suffix else ""}.pkl'
     data_file = os.path.join(paths['data'], data_file_name)
 
